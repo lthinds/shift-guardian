@@ -12,6 +12,10 @@ export interface EventRow {
   device_name: string | null;
   by_operator: boolean;
   sensor_id: string | null;
+  sensor_ids: string[];
+  sensor_labels: string | null;
+  end_time: string | null;
+  custom: Record<string, unknown>;
   description: string | null;
   status: string | null;
   operator_id: string | null;
@@ -107,12 +111,26 @@ export interface ShiftInfo {
   nextOperatorName: string;
 }
 
+/** "06:49" or "06:49 às 07:10" for continuous events. */
+export function timeRange(e: Pick<EventRow, "event_time" | "end_time">): string {
+  const a = hhmm(e.event_time);
+  const b = hhmm(e.end_time);
+  return b ? `${a} às ${b}` : a;
+}
+
+/** Sensor names of an event: stored snapshot first, live lookup as fallback. */
+export function eventSensors(e: EventRow, sensorLabel: (id: string | null) => string): string {
+  if (e.sensor_labels) return e.sensor_labels;
+  const ids = e.sensor_ids?.length ? e.sensor_ids : e.sensor_id ? [e.sensor_id] : [];
+  return ids.map((id) => sensorLabel(id)).filter(Boolean).join(", ");
+}
+
 /** Builds the WhatsApp block for one client. */
 export function buildClientBlock(c: ShiftClientInput, s: ShiftInfo): string {
   const alterations: string[] = [];
   for (const e of c.events.filter((x) => x.kind === "trigger")) {
     alterations.push(
-      `disparo ${hhmm(e.event_time)} ${c.sensorLabel(e.sensor_id)}${e.description ? ` (${e.description})` : ""}`.trim(),
+      `disparo ${timeRange(e)} ${eventSensors(e, c.sensorLabel)}${e.description ? ` (${e.description})` : ""}`.trim(),
     );
   }
   for (const b of c.newBypasses) {
@@ -132,25 +150,15 @@ export function buildClientBlock(c: ShiftClientInput, s: ShiftInfo): string {
     "",
     "Relatório de Plantão:",
     "",
-    `*Data:* ${formatBR(c.date)}`,
-    "",
+    `Data: ${formatBR(c.date)}`,
     `Plantão Finalizado: ${altText}`,
-    "",
     `Turno: ${s.shiftType}`,
-    "",
     `Nome: ${s.operatorName}`,
-    "",
-    `*Desarme: ${armText(latest(c.events, "disarm"))} - Arme: ${armText(latest(c.events, "arm"))}*`.replace(
-      /\s+\*$/,
-      "*",
-    ),
-    "",
+    `Desarme: ${armText(latest(c.events, "disarm"))} - Arme: ${armText(latest(c.events, "arm"))}`.trimEnd(),
     `Observações: ${obs || "S/A"}`,
     "",
     `Plantão Iniciado: sem alterações`,
-    "",
     `Turno: ${s.nextShiftType}`,
-    "",
     `Nome: ${s.nextOperatorName}`,
   ].join("\n");
 }
