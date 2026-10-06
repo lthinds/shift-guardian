@@ -24,6 +24,7 @@ export type Database = {
           operator_id: string | null
           reason: string | null
           sensor_id: string | null
+          sensor_label: string | null
           start_date: string
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           operator_id?: string | null
           reason?: string | null
           sensor_id?: string | null
+          sensor_label?: string | null
           start_date?: string
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           operator_id?: string | null
           reason?: string | null
           sensor_id?: string | null
+          sensor_label?: string | null
           start_date?: string
         }
         Relationships: [
@@ -67,6 +70,7 @@ export type Database = {
       }
       client_devices: {
         Row: {
+          active: boolean
           client_id: string
           created_at: string
           id: string
@@ -74,6 +78,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          active?: boolean
           client_id: string
           created_at?: string
           id?: string
@@ -81,6 +86,7 @@ export type Database = {
           type?: string
         }
         Update: {
+          active?: boolean
           client_id?: string
           created_at?: string
           id?: string
@@ -103,14 +109,18 @@ export type Database = {
           by_operator: boolean
           client_id: string
           created_at: string
+          custom: Json
           description: string | null
           device_name: string | null
+          end_time: string | null
           event_date: string
           event_time: string | null
           id: string
           kind: Database["public"]["Enums"]["event_kind"]
           operator_id: string | null
           sensor_id: string | null
+          sensor_ids: string[]
+          sensor_labels: string | null
           status: string | null
           user_name: string | null
         }
@@ -119,14 +129,18 @@ export type Database = {
           by_operator?: boolean
           client_id: string
           created_at?: string
+          custom?: Json
           description?: string | null
           device_name?: string | null
+          end_time?: string | null
           event_date?: string
           event_time?: string | null
           id?: string
           kind: Database["public"]["Enums"]["event_kind"]
           operator_id?: string | null
           sensor_id?: string | null
+          sensor_ids?: string[]
+          sensor_labels?: string | null
           status?: string | null
           user_name?: string | null
         }
@@ -135,14 +149,18 @@ export type Database = {
           by_operator?: boolean
           client_id?: string
           created_at?: string
+          custom?: Json
           description?: string | null
           device_name?: string | null
+          end_time?: string | null
           event_date?: string
           event_time?: string | null
           id?: string
           kind?: Database["public"]["Enums"]["event_kind"]
           operator_id?: string | null
           sensor_id?: string | null
+          sensor_ids?: string[]
+          sensor_labels?: string | null
           status?: string | null
           user_name?: string | null
         }
@@ -165,6 +183,7 @@ export type Database = {
       }
       client_sensors: {
         Row: {
+          active: boolean
           client_id: string
           created_at: string
           id: string
@@ -173,6 +192,7 @@ export type Database = {
           zone: string
         }
         Insert: {
+          active?: boolean
           client_id: string
           created_at?: string
           id?: string
@@ -181,6 +201,7 @@ export type Database = {
           zone: string
         }
         Update: {
+          active?: boolean
           client_id?: string
           created_at?: string
           id?: string
@@ -200,6 +221,7 @@ export type Database = {
       }
       client_users: {
         Row: {
+          active: boolean
           client_id: string
           created_at: string
           id: string
@@ -207,6 +229,7 @@ export type Database = {
           role: string | null
         }
         Insert: {
+          active?: boolean
           client_id: string
           created_at?: string
           id?: string
@@ -214,6 +237,7 @@ export type Database = {
           role?: string | null
         }
         Update: {
+          active?: boolean
           client_id?: string
           created_at?: string
           id?: string
@@ -232,6 +256,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          active: boolean
           address: string | null
           created_at: string
           id: string
@@ -239,6 +264,7 @@ export type Database = {
           notes: string | null
         }
         Insert: {
+          active?: boolean
           address?: string | null
           created_at?: string
           id?: string
@@ -246,11 +272,45 @@ export type Database = {
           notes?: string | null
         }
         Update: {
+          active?: boolean
           address?: string | null
           created_at?: string
           id?: string
           name?: string
           notes?: string | null
+        }
+        Relationships: []
+      }
+      custom_fields: {
+        Row: {
+          active: boolean
+          created_at: string
+          field_type: string
+          id: string
+          label: string
+          options: string[]
+          position: number
+          scope: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          field_type?: string
+          id?: string
+          label: string
+          options?: string[]
+          position?: number
+          scope: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          field_type?: string
+          id?: string
+          label?: string
+          options?: string[]
+          position?: number
+          scope?: string
         }
         Relationships: []
       }
@@ -332,6 +392,7 @@ export type Database = {
         Args: { _archived?: boolean; _month: string }
         Returns: number
       }
+      can_manage: { Args: { _uid: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -341,7 +402,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "operator"
+      app_role: "admin" | "operator" | "manager"
       event_kind: "arm" | "disarm" | "trigger" | "maintenance" | "observation"
     }
     CompositeTypes: {
@@ -470,7 +531,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "operator"],
+      app_role: ["admin", "operator", "manager"],
       event_kind: ["arm", "disarm", "trigger", "maintenance", "observation"],
     },
   },
