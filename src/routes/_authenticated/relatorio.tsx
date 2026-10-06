@@ -1,9 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, FileDown, Printer } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDown, Printer, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useBypasses, useClientData, useClients, useEvents, useMe, must, sensorLabel, type Bypass } from "@/hooks/use-safenet";
+import { useBypasses, useClientData, useClients, useEvents, useMe, useInvalidate, useCustomFields, must, sensorLabel, type Bypass } from "@/hooks/use-safenet";
+import { chooseExportFolder, saveExport } from '@/lib/export-files';
+import { archiveDeadline } from '@/lib/archive-retention';
+import type { Json } from '@/integrations/supabase/types';
 import { ArmForm, BypassPanel, EventList, QuickEventForm } from "@/components/events";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,12 +14,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  addDays, downloadText, eventSensors, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, WEEKDAY_LABELS, type EventRow,
+  addDays, eventSensors, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, WEEKDAY_LABELS, type EventRow,
 } from "@/lib/safenet";
 
 export const Route = createFileRoute("/_authenticated/relatorio")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Relatório semanal — Monitoramento Safenet" },
       { name: "description", content: "Relatório semanal por cliente: armes, desarmes, disparos, zonas inibidas, manutenções e observações." },
       { property: "og:title", content: "Relatório semanal — Monitoramento Safenet" },
@@ -29,14 +34,49 @@ export const Route = createFileRoute("/_authenticated/relatorio")({
 function Relatorio() {
   const { data: clients = [] } = useClients();
   const { data: me } = useMe();
+  const { data: fields = [] } = useCustomFields(undefined, true);
   const [clientId, setClientId] = useState<string>();
   const [ref, setRef] = useState(() => new Date());
   const [showArchived, setShowArchived] = useState(false);
   const [addDay, setAddDay] = useState<string | null>(null);
+  const [folderName, setFolderName] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [pendingArchive, setPendingArchive] = useState<Json | null>(null);
+  const inv = useInvalidate();
+  const chooseFolder = async () => {
+    try { setFolderName(await chooseExportFolder()); }
+    catch (e) { if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message); }
+  };
+  const exportPDF = async () => {
+    if (!client) return;
+    try {
+      const { jsPDF } = await import('jspdf');
+      const pdf = new jsPDF(); let y = 20;
+      const line = (text: string, size = 10) => {
+        pdf.setFontSize(size);
+        for (const s of pdf.splitTextToSize(text, 174) as string[]) {
+          if (y > 277) { pdf.addPage(); y = 20; }
+          pdf.text(s, 18, y); y += size === 16 ? 9 : 6;
+        }
+      };
+      line('Monitoramento Safenet', 16); line(client.name, 14); line(`${formatBR(from)} a ${formatBR(to)}`); y += 6;
+      for (const day of days) {
+        line(formatBR(day), 14);
+        const daily = events.filter(e => e.event_date === day);
+        for (const e of daily) {
+          line(`${KIND_LABEL[e.kind]}: ${hhmm(e.event_time)}${e.end_time ? ` às ${hhmm(e.end_time)}` : ''} ${e.user_name ?? ''} ${e.device_name ?? ''} ${eventSensors(e, id => sensorLabel(data?.sensors, id))} ${e.description ?? ''} ${e.status ?? ''}`);
+          for (const [id, value] of Object.entries(e.custom ?? {})) line(`${fields.find(f => f.id === id)?.label ?? id}: ${value}`);
+        }
+        for (const b of bypasses.filter(b => b.start_date <= day && (!b.end_date || b.end_date >= day))) line(`Zona inibida: ${b.sensor_label ?? sensorLabel(data?.sensors, b.sensor_id)} — ${b.reason ?? ''}`);
+        if (!daily.length) line('Sem registros de eventos'); y += 4;
+      }
+      await saveExport(`safenet_${client.name.replace(/\W+/g, '_')}_${from}.pdf`, pdf.output('blob'));
+    } catch (e) { if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message); }
+  };
   useEffect(() => { if (!clientId && clients[0]) setClientId(clients[0].id); }, [clients, clientId]);
 
   const days = weekDays(ref);
-  const from = days[0]!, to = days[6]!;
+  const from = days[0] ?? '', to = days[6] ?? '';
   const { data } = useClientData(clientId);
   const { data: events = [] } = useEvents(clientId, from, to, showArchived);
   const { data: bypasses = [] } = useBypasses(clientId, from, to, showArchived);
@@ -64,7 +104,25 @@ function Relatorio() {
       })),
     ];
     const cols = ["record_id", "client_id", "client_name", "record_type", "event_date", "event_time", "event_end_time", "user_name", "device_name", "by_operator", "sensor", "description", "status", "end_date", "custom", "archived", "created_at"];
-    downloadText(`safenet_${client.name.replace(/\W+/g, "_")}_${r.from}_${r.to}.csv`, toCSV(rows, cols));
+    await saveExport(`safenet_${client.name.replace(/\W+/g, "_")}_${r.from}_${r.to}.csv`, new Blob(['\ufeff', toCSV(rows, cols)], { type: 'text/csv;charset=utf-8' }));
+  };
+
+  const confirmArchive = async (snapshot: Json) => {
+    const { data: count, error } = await supabase.rpc('confirm_saved_archive', { _snapshot: snapshot });
+    if (error) throw new Error(error.message);
+    setPendingArchive(null); inv('events', 'bypasses');
+    toast.success(`${count} registros arquivados; exclusão após ${formatBR(archiveDeadline(new Date()).toISOString().slice(0, 10))}.`);
+  };
+  const saveArchive = async () => {
+    setBusy(true);
+    try {
+      const { data: snapshot, error } = await supabase.rpc('prepare_archive_month', { _month: monthRange(ref).from });
+      if (error || !snapshot) throw new Error(error?.message ?? 'Não foi possível preparar a cópia');
+      const result = await saveExport(`safenet_arquivo_${monthRange(ref).from}_${Date.now()}.json`, new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' }));
+      if (result === 'saved') await confirmArchive(snapshot);
+      else setPendingArchive(snapshot);
+    } catch (e) { if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message); }
+    finally { setBusy(false); }
   };
 
   const archive = async (undo: boolean) => {
@@ -72,6 +130,7 @@ function Relatorio() {
     const { data: n, error } = await supabase.rpc("archive_month", { _month: m, _archived: !undo });
     if (error) { toast.error(error.message); return; }
     toast.success(`${n} registros ${undo ? "restaurados" : "arquivados"} (${m.slice(5, 7)}/${m.slice(0, 4)})`);
+    inv('events', 'bypasses');
   };
 
   return (
@@ -90,17 +149,26 @@ function Relatorio() {
         <Button variant="outline" size="sm" onClick={() => setRef(new Date())}>Semana atual</Button>
       </div>
       <div className="no-print flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="secondary" onClick={() => exportCSV("week")}><FileDown className="mr-1 h-4 w-4" />CSV semana</Button>
-        <Button size="sm" variant="secondary" onClick={() => exportCSV("month")}><FileDown className="mr-1 h-4 w-4" />CSV mês</Button>
-        <Button size="sm" variant="secondary" onClick={() => window.print()}><Printer className="mr-1 h-4 w-4" />PDF semana</Button>
+        <Button size="sm" variant="secondary" onClick={() => exportCSV("week").catch(e => { if (e.name !== 'AbortError') toast.error(e.message); })}><FileDown className="mr-1 h-4 w-4" />CSV semana</Button>
+        <Button size="sm" variant="secondary" onClick={() => exportCSV("month").catch(e => { if (e.name !== 'AbortError') toast.error(e.message); })}><FileDown className="mr-1 h-4 w-4" />CSV mês</Button>
+        <Button size="sm" variant="secondary" onClick={exportPDF}><Printer className="mr-1 h-4 w-4" />PDF semana</Button>
         {me?.isAdmin && (
           <>
+            <Button size="sm" variant="outline" onClick={chooseFolder}><FolderOpen className="mr-1 h-4 w-4" />{folderName || 'Escolher pasta'}</Button>
             <label className="ml-auto flex items-center gap-2 text-sm"><Switch checked={showArchived} onCheckedChange={setShowArchived} />Mostrar arquivados</label>
-            <Button size="sm" variant="outline" onClick={() => archive(false)}>Arquivar mês de {formatBR(from).slice(3)}</Button>
+            <Button size="sm" variant="outline" disabled={busy || !!pendingArchive} onClick={saveArchive}>Salvar e arquivar mês de {formatBR(from).slice(3)}</Button>
             <Button size="sm" variant="ghost" onClick={() => archive(true)}>Restaurar mês</Button>
           </>
         )}
       </div>
+
+      <Dialog open={pendingArchive !== null} onOpenChange={o => { if (!o) setPendingArchive(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Confirmar cópia salva</DialogTitle></DialogHeader>
+          <p>Confirme que o arquivo JSON foi salvo e pode ser aberto. Os registros arquivados serão excluídos do sistema após um mês; o arquivo salvo permanece na pasta.</p>
+          <Button variant="destructive" disabled={busy} onClick={async () => { if (!pendingArchive) return; setBusy(true); try { await confirmArchive(pendingArchive); } catch(e) { toast.error(e instanceof Error ? e.message : 'Erro ao arquivar'); } finally { setBusy(false); } }}>Cópia salva — arquivar</Button>
+          <Button variant="outline" onClick={() => setPendingArchive(null)}>Cancelar</Button>
+        </DialogContent>
+      </Dialog>
 
       {!client ? <p className="text-muted-foreground">Cadastre um cliente para ver o relatório.</p> : (
         <>

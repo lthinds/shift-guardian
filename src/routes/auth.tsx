@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Entrar — Monitoramento Safenet" },
       { name: "description", content: "Acesso dos operadores de monitoramento Safenet." },
       { property: "og:title", content: "Entrar — Monitoramento Safenet" },
@@ -52,7 +54,7 @@ function AuthPage() {
       });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
-      toast.success("Cadastro feito! Confirme pelo link enviado ao seu e-mail.");
+      toast.success("Confirme seu e-mail. O acesso depende da aprovação do administrador.");
       setMode("in");
     }
   };

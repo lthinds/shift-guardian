@@ -3,7 +3,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
 import { ShieldCheck, Radio, CalendarRange, Building2, Users, Moon, Sun, LogOut, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useActiveShift, useMe, useOperators } from "@/hooks/use-safenet";
+import { useActiveShift, useMe, useOperators, useOperatorAccess } from "@/hooks/use-safenet";
+import { canOperate } from '@/lib/access';
 import { Button } from "@/components/ui/button";
 
 const NAV = [
@@ -15,9 +16,18 @@ const NAV = [
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { data: status, isPending, isError, refetch } = useOperatorAccess();
+  const qc = useQueryClient();
+  useEffect(() => { if (status && !canOperate(status)) { void qc.cancelQueries({ predicate: q => q.queryKey[0] !== 'operator-access' }); qc.removeQueries({ predicate: q => q.queryKey[0] !== 'operator-access' }); } }, [status, qc]);
+  if (isPending) return <main className="p-6">Verificando autorização…</main>;
+  if (!canOperate(status)) return <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background p-6 text-center"><h1 className="text-2xl font-bold">Monitoramento Safenet</h1><p>{isError ? 'Não foi possível verificar sua autorização.' : status === 'removed' ? 'Seu acesso foi removido.' : 'Seu cadastro aguarda aprovação do administrador.'}</p><Button variant="outline" onClick={() => refetch()}>Verificar autorização</Button><Button variant="ghost" onClick={async () => { await supabase.auth.signOut(); window.location.assign('/auth'); }}>Sair</Button></main>;
+  return <ApprovedShell>{children}</ApprovedShell>;
+}
+
+function ApprovedShell({ children }: { children: ReactNode }) {
   const { data: me } = useMe();
   const { data: shift } = useActiveShift();
-  const { data: ops } = useOperators();
+  const { data: ops } = useOperators(true);
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [dark, setDark] = useState(false);

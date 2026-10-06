@@ -19,6 +19,8 @@ import { buildShiftMessage, nextShiftType, toISODate, type EventRow } from "@/li
 export const Route = createFileRoute("/_authenticated/plantao")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Plantão — Monitoramento Safenet" },
       { name: "description", content: "Registro em tempo real de armes, desarmes, disparos e zonas inibidas durante o turno." },
       { property: "og:title", content: "Plantão — Monitoramento Safenet" },
@@ -68,7 +70,8 @@ function StartShift() {
   const inv = useInvalidate();
   const [type, setType] = useState(new Date().getHours() >= 6 && new Date().getHours() < 18 ? "Diurno" : "Noturno");
   const start = async () => {
-    const { error } = await supabase.from("shifts").insert({ operator_id: me!.id, shift_type: type });
+    if (!me) return;
+    const { error } = await supabase.from("shifts").insert({ operator_id: me.id, shift_type: type });
     if (error) { toast.error(error.message); return; }
     toast.success("Plantão iniciado"); inv("active-shift");
   };
@@ -116,7 +119,7 @@ function ClientPanel({ clientId }: { clientId: string }) {
 
 function EndShiftDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const { data: shift } = useActiveShift();
-  const { data: ops = [] } = useOperators();
+  const { data: ops = [] } = useOperators(true);
   const { data: clients = [] } = useClients();
   const { data: sensors } = useAllSensors();
   const inv = useInvalidate();
@@ -167,7 +170,7 @@ function EndShiftDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
             <div className="flex-1 space-y-1"><Label>Próximo operador</Label>
               <Select value={next} onValueChange={setNext}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{ops.map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{ops.filter(o => o.status === 'approved').map((o) => <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>)}</SelectContent>
               </Select></div>
             <Button onClick={generate}>Gerar relatório</Button>
           </div>

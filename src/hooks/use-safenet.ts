@@ -1,8 +1,17 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { EventRow } from "@/lib/safenet";
+import { canOperate, type AccessStatus } from '@/lib/access';
 
 export interface Profile { id: string; name: string; email: string | null }
+export function useOperatorAccess() {
+  return useQuery({ queryKey: ['operator-access'], refetchInterval: 15000, queryFn: async () => {
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return 'removed' as AccessStatus;
+    const row = await must<{ status: AccessStatus }>(supabase.from('operator_access').select('status').eq('user_id', data.user.id).single());
+    return row.status;
+  } });
+}
 export interface Client { id: string; name: string; address: string | null; notes: string | null }
 export interface Sensor { id: string; client_id: string; zone: string; name: string; type: string }
 export interface Device { id: string; client_id: string; name: string; type: string }
@@ -27,7 +36,8 @@ export function useMe() {
     queryKey: ["me"],
     queryFn: async () => {
       const { data } = await supabase.auth.getUser();
-      const uid = data.user!.id;
+      if (!data.user) throw new Error('Entre novamente');
+      const uid = data.user.id;
       const profile = await must<Profile>(supabase.from("profiles").select("id,name,email").eq("id", uid).single());
       const roles = await must<{ role: string }[]>(supabase.from("user_roles").select("role").eq("user_id", uid));
       const isAdmin = roles.some((r) => r.role === "admin");
@@ -36,14 +46,15 @@ export function useMe() {
   });
 }
 
-export const useOperators = () =>
+export const useOperators = (includeAll = false) =>
   useQuery({
-    queryKey: ["operators"],
+    queryKey: ["operators", includeAll],
     queryFn: async () => {
       const profiles = await must<Profile[]>(supabase.from("profiles").select("id,name,email").order("name"));
       const roles = await must<{ user_id: string; role: string }[]>(supabase.from("user_roles").select("user_id,role"));
+      const access = await must<{ user_id: string; status: AccessStatus }[]>(supabase.from('operator_access').select('user_id,status'));
       const has = (id: string, r: string) => roles.some((x) => x.user_id === id && x.role === r);
-      return profiles.map((p) => ({ ...p, isAdmin: has(p.id, "admin"), isManager: has(p.id, "manager") }));
+      return profiles.map((p) => ({ ...p, status: access.find(a => a.user_id === p.id)?.status ?? 'pending', isAdmin: has(p.id, "admin"), isManager: has(p.id, "manager") })).filter(p => includeAll || canOperate(p.status));
     },
   });
 
