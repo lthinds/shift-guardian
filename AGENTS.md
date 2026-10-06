@@ -6,3 +6,7 @@
 - Registrations (clients, users, devices, sensors) are soft-deleted with `active=false`, and events/bypasses store name snapshots (`sensor_labels`, `sensor_label`). Why: renaming or removing items never erases or alters history.
 - Admin-defined extra fields live in `custom_fields` (scoped per event kind); values go in `client_events.custom` jsonb keyed by field id. Why: the team evolves forms without code changes.
 - Prebundle browser dependencies in Vite, but never include `@tanstack/react-start`. Why: prevents late dependency discovery from mixing React instances while preserving Start's server-to-browser import transforms.
+- Operator approval state lives separately from roles in `operator_access`; restrictive RLS checks it on every operational table and AppShell gates pending/removed accounts. Why: revocation blocks existing tokens, not just future logins.
+- Administrator account removal uses an authenticated server function to block RLS first and then soft-delete Auth through its admin API; profiles remain for history. Why: former staff lose access without erasing shift attribution.
+- Archives are full JSON snapshots saved before a compare-and-match confirmation marks rows with `archived_at`; edits reset retention and daily SQL cleanup deletes only expired archived rows. Why: unsaved, changed and unarchived records must never be purged.
+- File exports use browser folder/file APIs with download fallback, and PDF is generated client-side. Why: files stay on the operator's computer or accessible company network drive.

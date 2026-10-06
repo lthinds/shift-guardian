@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, FileDown, Printer, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useBypasses, useClientData, useClients, useEvents, useMe, useInvalidate, must, sensorLabel, type Bypass } from "@/hooks/use-safenet";
+import { useBypasses, useClientData, useClients, useEvents, useMe, useInvalidate, useCustomFields, must, sensorLabel, type Bypass } from "@/hooks/use-safenet";
 import { chooseExportFolder, saveExport } from '@/lib/export-files';
 import { archiveDeadline } from '@/lib/archive-retention';
 import type { Json } from '@/integrations/supabase/types';
@@ -32,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/relatorio")({
 function Relatorio() {
   const { data: clients = [] } = useClients();
   const { data: me } = useMe();
+  const { data: fields = [] } = useCustomFields(undefined, true);
   const [clientId, setClientId] = useState<string>();
   const [ref, setRef] = useState(() => new Date());
   const [showArchived, setShowArchived] = useState(false);
