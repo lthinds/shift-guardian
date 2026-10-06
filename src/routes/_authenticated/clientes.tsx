@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 export const Route = createFileRoute("/_authenticated/clientes")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Clientes — Monitoramento Safenet" },
       { name: "description", content: "Cadastro de clientes monitorados, usuários autorizados, dispositivos e sensores." },
       { property: "og:title", content: "Clientes — Monitoramento Safenet" },

@@ -19,6 +19,8 @@ import { buildShiftMessage, nextShiftType, toISODate, type EventRow } from "@/li
 export const Route = createFileRoute("/_authenticated/plantao")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Plantão — Monitoramento Safenet" },
       { name: "description", content: "Registro em tempo real de armes, desarmes, disparos e zonas inibidas durante o turno." },
       { property: "og:title", content: "Plantão — Monitoramento Safenet" },

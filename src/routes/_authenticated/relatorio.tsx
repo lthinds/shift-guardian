@@ -20,6 +20,8 @@ import {
 export const Route = createFileRoute("/_authenticated/relatorio")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Relatório semanal — Monitoramento Safenet" },
       { name: "description", content: "Relatório semanal por cliente: armes, desarmes, disparos, zonas inibidas, manutenções e observações." },
       { property: "og:title", content: "Relatório semanal — Monitoramento Safenet" },

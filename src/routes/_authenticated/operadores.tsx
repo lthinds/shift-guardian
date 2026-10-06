@@ -13,6 +13,8 @@ import { canChangeOperator } from '@/lib/access';
 export const Route = createFileRoute("/_authenticated/operadores")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Operadores — Monitoramento Safenet" },
       { name: "description", content: "Operadores de monitoramento cadastrados e histórico de plantões." },
       { property: "og:title", content: "Operadores — Monitoramento Safenet" },

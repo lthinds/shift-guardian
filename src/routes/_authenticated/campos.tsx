@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 export const Route = createFileRoute("/_authenticated/campos")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Campos personalizados — Monitoramento Safenet" },
       { name: "description", content: "Crie, renomeie, altere e desative campos de preenchimento do plantão e do relatório." },
       { property: "og:title", content: "Campos personalizados — Monitoramento Safenet" },

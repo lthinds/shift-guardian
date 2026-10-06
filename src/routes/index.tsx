@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Monitoramento Safenet — Plantão e relatórios" },
       { name: "description", content: "Registro de plantão, armes, desarmes, disparos e relatórios semanais da Safenet." },
       { property: "og:title", content: "Monitoramento Safenet" },
