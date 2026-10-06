@@ -30,7 +30,8 @@ export function useMe() {
       const uid = data.user!.id;
       const profile = await must<Profile>(supabase.from("profiles").select("id,name,email").eq("id", uid).single());
       const roles = await must<{ role: string }[]>(supabase.from("user_roles").select("role").eq("user_id", uid));
-      return { id: uid, profile, isAdmin: roles.some((r) => r.role === "admin") };
+      const isAdmin = roles.some((r) => r.role === "admin");
+      return { id: uid, profile, isAdmin, canManage: isAdmin || roles.some((r) => r.role === "manager") };
     },
   });
 }
@@ -41,14 +42,15 @@ export const useOperators = () =>
     queryFn: async () => {
       const profiles = await must<Profile[]>(supabase.from("profiles").select("id,name,email").order("name"));
       const roles = await must<{ user_id: string; role: string }[]>(supabase.from("user_roles").select("user_id,role"));
-      return profiles.map((p) => ({ ...p, isAdmin: roles.some((r) => r.user_id === p.id && r.role === "admin") }));
+      const has = (id: string, r: string) => roles.some((x) => x.user_id === id && x.role === r);
+      return profiles.map((p) => ({ ...p, isAdmin: has(p.id, "admin"), isManager: has(p.id, "manager") }));
     },
   });
 
 export const useClients = () =>
   useQuery({
     queryKey: ["clients"],
-    queryFn: () => must<Client[]>(supabase.from("clients").select("*").order("name")),
+    queryFn: () => must<Client[]>(supabase.from("clients").select("*").eq("active", true).order("name")),
   });
 
 export const useClientData = (clientId: string | undefined) =>
@@ -57,9 +59,9 @@ export const useClientData = (clientId: string | undefined) =>
     enabled: !!clientId,
     queryFn: async () => {
       const [users, devices, sensors] = await Promise.all([
-        must<ClientUser[]>(supabase.from("client_users").select("*").eq("client_id", clientId!).order("name")),
-        must<Device[]>(supabase.from("client_devices").select("*").eq("client_id", clientId!).order("name")),
-        must<Sensor[]>(supabase.from("client_sensors").select("*").eq("client_id", clientId!).order("zone")),
+        must<ClientUser[]>(supabase.from("client_users").select("*").eq("client_id", clientId!).eq("active", true).order("name")),
+        must<Device[]>(supabase.from("client_devices").select("*").eq("client_id", clientId!).eq("active", true).order("name")),
+        must<Sensor[]>(supabase.from("client_sensors").select("*").eq("client_id", clientId!).eq("active", true).order("zone")),
       ]);
       return { users, devices, sensors };
     },
@@ -69,6 +71,23 @@ export const useAllSensors = () =>
   useQuery({
     queryKey: ["all-sensors"],
     queryFn: () => must<Sensor[]>(supabase.from("client_sensors").select("*")),
+  });
+
+export interface CustomField {
+  id: string; scope: string; label: string; field_type: string; options: string[]; position: number; active: boolean;
+}
+export const FIELD_SCOPES: Record<string, string> = {
+  disarm: "Desarme", arm: "Arme", trigger: "Disparos", maintenance: "Manutenções", observation: "Observações",
+};
+export const useCustomFields = (scope?: string, includeInactive = false) =>
+  useQuery({
+    queryKey: ["custom-fields", scope, includeInactive],
+    queryFn: () => {
+      let q = supabase.from("custom_fields").select("*");
+      if (scope) q = q.eq("scope", scope);
+      if (!includeInactive) q = q.eq("active", true);
+      return must<CustomField[]>(q.order("position").order("created_at"));
+    },
   });
 
 export const useEvents = (clientId: string | undefined, from: string, to: string, includeArchived = false) =>
