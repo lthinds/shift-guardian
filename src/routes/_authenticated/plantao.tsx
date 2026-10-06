@@ -140,7 +140,7 @@ function EndShiftDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
         clientName: c.name,
         date: today,
         events: events.filter((e) => e.client_id === c.id && inShift(e)),
-        newBypasses: bps.filter((b) => b.client_id === c.id).map((b) => ({ sensorLabel: sensorLabel(sensors, b.sensor_id), reason: b.reason })),
+        newBypasses: bps.filter((b) => b.client_id === c.id).map((b) => ({ sensorLabel: b.sensor_label ?? sensorLabel(sensors, b.sensor_id), reason: b.reason })),
         sensorLabel: (id) => sensorLabel(sensors, id),
       })),
       { shiftType: shift.shift_type, operatorName: opName, nextShiftType: nextShiftType(shift.shift_type), nextOperatorName: ops.find((o) => o.id === next)?.name ?? "" },

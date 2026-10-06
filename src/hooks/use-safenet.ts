@@ -8,7 +8,7 @@ export interface Sensor { id: string; client_id: string; zone: string; name: str
 export interface Device { id: string; client_id: string; name: string; type: string }
 export interface ClientUser { id: string; client_id: string; name: string; role: string | null }
 export interface Bypass {
-  id: string; client_id: string; sensor_id: string | null; reason: string | null;
+  id: string; client_id: string; sensor_id: string | null; sensor_label: string | null; reason: string | null;
   start_date: string; end_date: string | null; operator_id: string | null; archived: boolean; created_at: string;
 }
 export interface Shift {
