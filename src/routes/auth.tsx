@@ -38,7 +38,7 @@ function AuthPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse({ email, password, name });
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!parsed.success) { toast.error(parsed.error.issues[0]?.message ?? "Dados inválidos"); return; }
     if (mode === "up" && !name.trim()) { toast.error("Informe seu nome"); return; }
     setBusy(true);
     if (mode === "in") {

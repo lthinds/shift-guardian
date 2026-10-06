@@ -1,10 +1,4 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
-<!-- LOVABLE:END -->
+# AGENTS
+- All client activity (arm, disarm, trigger, maintenance, observation) lives in one `client_events` table keyed by `kind`; bypasses are a separate table because they have a start/end lifespan. Why: plantão and weekly report read the same rows, so shift entries feed the report automatically.
+- Data access uses the browser Lovable Cloud client with RLS (team-wide access for authenticated operators); admin-only actions go through security-definer RPCs. Why: internal team tool, no public data.
+- Pure formatting/report logic (week ranges, WhatsApp message, CSV) lives in `src/lib/safenet.ts` with tests. Why: keeps rules testable.
