@@ -11,8 +11,9 @@ import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 // That rebuild changes the version hash of every optimized module, so a route component that
 // is already on screen keeps importing the previous copy of React while the rest of the app
 // uses the new one. The result is a null hook dispatcher: "Cannot read properties of null
-// (reading 'useContext')" and a blank screen. Declaring every external package up front keeps
-// the cache hash stable for the whole session.
+// (reading 'useContext')" and a blank screen. Prebundling browser dependencies keeps the
+// cache stable; TanStack Start must remain outside this list so its server imports can
+// be removed by the framework's browser transform.
 const prebundle = [
   "react",
   "react-dom",
@@ -20,7 +21,6 @@ const prebundle = [
   "@supabase/supabase-js",
   "@tanstack/react-query",
   "@tanstack/react-router",
-  "@tanstack/react-start",
   "class-variance-authority",
   "clsx",
   "cmdk",
