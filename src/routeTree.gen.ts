@@ -10,95 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
-import { Route as AuthenticatedOperadoresRouteImport } from './routes/_authenticated/operadores'
-import { Route as AuthenticatedPlantaoRouteImport } from './routes/_authenticated/plantao'
-import { Route as AuthenticatedRelatorioRouteImport } from './routes/_authenticated/relatorio'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
-  id: '/clientes',
-  path: '/clientes',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedOperadoresRoute = AuthenticatedOperadoresRouteImport.update({
-  id: '/operadores',
-  path: '/operadores',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedPlantaoRoute = AuthenticatedPlantaoRouteImport.update({
-  id: '/plantao',
-  path: '/plantao',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedRelatorioRoute = AuthenticatedRelatorioRouteImport.update({
-  id: '/relatorio',
-  path: '/relatorio',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/clientes': typeof AuthenticatedClientesRoute
-  '/operadores': typeof AuthenticatedOperadoresRoute
-  '/plantao': typeof AuthenticatedPlantaoRoute
-  '/relatorio': typeof AuthenticatedRelatorioRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/clientes': typeof AuthenticatedClientesRoute
-  '/operadores': typeof AuthenticatedOperadoresRoute
-  '/plantao': typeof AuthenticatedPlantaoRoute
-  '/relatorio': typeof AuthenticatedRelatorioRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
-  '/_authenticated/clientes': typeof AuthenticatedClientesRoute
-  '/_authenticated/operadores': typeof AuthenticatedOperadoresRoute
-  '/_authenticated/plantao': typeof AuthenticatedPlantaoRoute
-  '/_authenticated/relatorio': typeof AuthenticatedRelatorioRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    '/' | '/auth' | '/clientes' | '/operadores' | '/plantao' | '/relatorio'
+  fullPaths: '/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/clientes' | '/operadores' | '/plantao' | '/relatorio'
-  id:
-    | '__root__'
-    | '/'
-    | '/_authenticated'
-    | '/auth'
-    | '/_authenticated/clientes'
-    | '/_authenticated/operadores'
-    | '/_authenticated/plantao'
-    | '/_authenticated/relatorio'
+  to: '/'
+  id: '__root__' | '/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -110,72 +48,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/clientes': {
-      id: '/_authenticated/clientes'
-      path: '/clientes'
-      fullPath: '/clientes'
-      preLoaderRoute: typeof AuthenticatedClientesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/operadores': {
-      id: '/_authenticated/operadores'
-      path: '/operadores'
-      fullPath: '/operadores'
-      preLoaderRoute: typeof AuthenticatedOperadoresRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/plantao': {
-      id: '/_authenticated/plantao'
-      path: '/plantao'
-      fullPath: '/plantao'
-      preLoaderRoute: typeof AuthenticatedPlantaoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/relatorio': {
-      id: '/_authenticated/relatorio'
-      path: '/relatorio'
-      fullPath: '/relatorio'
-      preLoaderRoute: typeof AuthenticatedRelatorioRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
-  AuthenticatedOperadoresRoute: typeof AuthenticatedOperadoresRoute
-  AuthenticatedPlantaoRoute: typeof AuthenticatedPlantaoRoute
-  AuthenticatedRelatorioRoute: typeof AuthenticatedRelatorioRoute
-}
-
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedClientesRoute: AuthenticatedClientesRoute,
-  AuthenticatedOperadoresRoute: AuthenticatedOperadoresRoute,
-  AuthenticatedPlantaoRoute: AuthenticatedPlantaoRoute,
-  AuthenticatedRelatorioRoute: AuthenticatedRelatorioRoute,
-}
-
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
