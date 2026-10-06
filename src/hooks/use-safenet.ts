@@ -16,7 +16,7 @@ export interface Shift {
   ended_at: string | null; next_operator_id: string | null; message: string | null;
 }
 
-async function must<T>(p: PromiseLike<{ data: T | null; error: { message: string } | null }>): Promise<T> {
+async function must<T>(p: PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T> {
   const { data, error } = await p;
   if (error) throw new Error(error.message);
   return data as T;

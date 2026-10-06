@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedCamposRouteImport } from './routes/_authenticated/campos'
 import { Route as AuthenticatedClientesRouteImport } from './routes/_authenticated/clientes'
 import { Route as AuthenticatedOperadoresRouteImport } from './routes/_authenticated/operadores'
 import { Route as AuthenticatedPlantaoRouteImport } from './routes/_authenticated/plantao'
@@ -30,6 +31,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCamposRoute = AuthenticatedCamposRouteImport.update({
+  id: '/campos',
+  path: '/campos',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedClientesRoute = AuthenticatedClientesRouteImport.update({
   id: '/clientes',
@@ -55,6 +61,7 @@ const AuthenticatedRelatorioRoute = AuthenticatedRelatorioRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/campos': typeof AuthenticatedCamposRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/operadores': typeof AuthenticatedOperadoresRoute
   '/plantao': typeof AuthenticatedPlantaoRoute
@@ -63,6 +70,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/campos': typeof AuthenticatedCamposRoute
   '/clientes': typeof AuthenticatedClientesRoute
   '/operadores': typeof AuthenticatedOperadoresRoute
   '/plantao': typeof AuthenticatedPlantaoRoute
@@ -73,6 +81,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/campos': typeof AuthenticatedCamposRoute
   '/_authenticated/clientes': typeof AuthenticatedClientesRoute
   '/_authenticated/operadores': typeof AuthenticatedOperadoresRoute
   '/_authenticated/plantao': typeof AuthenticatedPlantaoRoute
@@ -81,14 +90,28 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/clientes' | '/operadores' | '/plantao' | '/relatorio'
+    | '/'
+    | '/auth'
+    | '/campos'
+    | '/clientes'
+    | '/operadores'
+    | '/plantao'
+    | '/relatorio'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/clientes' | '/operadores' | '/plantao' | '/relatorio'
+  to:
+    | '/'
+    | '/auth'
+    | '/campos'
+    | '/clientes'
+    | '/operadores'
+    | '/plantao'
+    | '/relatorio'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/campos'
     | '/_authenticated/clientes'
     | '/_authenticated/operadores'
     | '/_authenticated/plantao'
@@ -124,6 +147,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/campos': {
+      id: '/_authenticated/campos'
+      path: '/campos'
+      fullPath: '/campos'
+      preLoaderRoute: typeof AuthenticatedCamposRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/clientes': {
       id: '/_authenticated/clientes'
       path: '/clientes'
@@ -156,6 +186,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCamposRoute: typeof AuthenticatedCamposRoute
   AuthenticatedClientesRoute: typeof AuthenticatedClientesRoute
   AuthenticatedOperadoresRoute: typeof AuthenticatedOperadoresRoute
   AuthenticatedPlantaoRoute: typeof AuthenticatedPlantaoRoute
@@ -163,6 +194,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCamposRoute: AuthenticatedCamposRoute,
   AuthenticatedClientesRoute: AuthenticatedClientesRoute,
   AuthenticatedOperadoresRoute: AuthenticatedOperadoresRoute,
   AuthenticatedPlantaoRoute: AuthenticatedPlantaoRoute,
