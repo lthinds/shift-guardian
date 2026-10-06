@@ -35,10 +35,10 @@ function Operadores() {
     await supabase.from("profiles").update({ name: v.trim().slice(0, 100) }).eq("id", me!.id);
     inv("me", "operators"); toast.success("Nome atualizado");
   };
-  const toggleAdmin = async (uid: string, isAdmin: boolean) => {
-    const { error } = isAdmin
-      ? await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", "admin")
-      : await supabase.from("user_roles").insert({ user_id: uid, role: "admin" });
+  const toggleRole = async (uid: string, role: "admin" | "manager", has: boolean) => {
+    const { error } = has
+      ? await supabase.from("user_roles").delete().eq("user_id", uid).eq("role", role)
+      : await supabase.from("user_roles").insert({ user_id: uid, role });
     if (error) { toast.error(error.message); return; }
     inv("operators", "me");
   };
@@ -51,15 +51,25 @@ function Operadores() {
         <CardContent>{me && <Input key={me.profile.name} defaultValue={me.profile.name} onBlur={(e) => rename(e.target.value)} className="max-w-sm" />}</CardContent>
       </Card>
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-base">Equipe ({ops.length})</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Equipe e permissões ({ops.length})</CardTitle></CardHeader>
         <CardContent className="divide-y">
-          <p className="pb-2 text-xs text-muted-foreground">Novos operadores se cadastram pela tela de login.</p>
+          <div className="space-y-0.5 pb-2 text-xs text-muted-foreground">
+            <p><b>Operador:</b> preenche Plantão e Relatório semanal.</p>
+            <p><b>Cadastros:</b> também cria e altera clientes, usuários, dispositivos, sensores e campos.</p>
+            <p><b>Admin:</b> acesso total, incluindo arquivamento, exclusões e permissões.</p>
+            <p>Novos operadores se cadastram pela tela de login.</p>
+          </div>
           {ops.map((o) => (
-            <div key={o.id} className="flex items-center justify-between py-2 text-sm">
+            <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
               <div><span className="font-medium">{o.name}</span> <span className="text-muted-foreground">{o.email}</span></div>
               <div className="flex items-center gap-2">
-                {o.isAdmin && <span className="rounded bg-accent px-1.5 py-0.5 text-xs">admin</span>}
-                {me?.isAdmin && o.id !== me.id && <Button size="sm" variant="outline" onClick={() => toggleAdmin(o.id, o.isAdmin)}>{o.isAdmin ? "Remover admin" : "Tornar admin"}</Button>}
+                <span className="rounded bg-accent px1.5 px-1.5 py-0.5 text-xs">{o.isAdmin ? "admin" : o.isManager ? "cadastros" : "operador"}</span>
+                {me?.isAdmin && o.id !== me.id && (
+                  <>
+                    {!o.isAdmin && <Button size="sm" variant="outline" onClick={() => toggleRole(o.id, "manager", o.isManager)}>{o.isManager ? "Revogar cadastros" : "Conceder cadastros"}</Button>}
+                    <Button size="sm" variant="outline" onClick={() => toggleRole(o.id, "admin", o.isAdmin)}>{o.isAdmin ? "Remover admin" : "Tornar admin"}</Button>
+                  </>
+                )}
               </div>
             </div>
           ))}
