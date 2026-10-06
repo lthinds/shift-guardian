@@ -52,7 +52,7 @@ function AuthPage() {
       });
       setBusy(false);
       if (error) { toast.error(error.message); return; }
-      toast.success("Cadastro feito! Confirme pelo link enviado ao seu e-mail.");
+      toast.success("Confirme seu e-mail. O acesso depende da aprovação do administrador.");
       setMode("in");
     }
   };
