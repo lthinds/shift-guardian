@@ -17,6 +17,7 @@ export type Database = {
       bypasses: {
         Row: {
           archived: boolean
+          archived_at: string | null
           client_id: string
           created_at: string
           end_date: string | null
@@ -29,6 +30,7 @@ export type Database = {
         }
         Insert: {
           archived?: boolean
+          archived_at?: string | null
           client_id: string
           created_at?: string
           end_date?: string | null
@@ -41,6 +43,7 @@ export type Database = {
         }
         Update: {
           archived?: boolean
+          archived_at?: string | null
           client_id?: string
           created_at?: string
           end_date?: string | null
@@ -106,6 +109,7 @@ export type Database = {
       client_events: {
         Row: {
           archived: boolean
+          archived_at: string | null
           by_operator: boolean
           client_id: string
           created_at: string
@@ -126,6 +130,7 @@ export type Database = {
         }
         Insert: {
           archived?: boolean
+          archived_at?: string | null
           by_operator?: boolean
           client_id: string
           created_at?: string
@@ -146,6 +151,7 @@ export type Database = {
         }
         Update: {
           archived?: boolean
+          archived_at?: string | null
           by_operator?: boolean
           client_id?: string
           created_at?: string
@@ -314,6 +320,24 @@ export type Database = {
         }
         Relationships: []
       }
+      operator_access: {
+        Row: {
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -393,12 +417,20 @@ export type Database = {
         Returns: number
       }
       can_manage: { Args: { _uid: string }; Returns: boolean }
+      confirm_saved_archive: { Args: { _snapshot: Json }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      is_approved: { Args: { _uid: string }; Returns: boolean }
+      prepare_archive_month: { Args: { _month: string }; Returns: Json }
+      purge_expired_archives: { Args: never; Returns: number }
+      set_operator_access: {
+        Args: { _status: string; _user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
