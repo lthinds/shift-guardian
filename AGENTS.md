@@ -5,3 +5,4 @@
 - Permissions: roles in `user_roles` (operator, manager = "cadastros", admin); `can_manage()` gates inserts/updates of registrations and custom fields via RLS, deletes are admin-only on every table. Why: three-level access the team requested, enforced in the database.
 - Registrations (clients, users, devices, sensors) are soft-deleted with `active=false`, and events/bypasses store name snapshots (`sensor_labels`, `sensor_label`). Why: renaming or removing items never erases or alters history.
 - Admin-defined extra fields live in `custom_fields` (scoped per event kind); values go in `client_events.custom` jsonb keyed by field id. Why: the team evolves forms without code changes.
+- Prebundle browser dependencies in Vite, but never include `@tanstack/react-start`. Why: prevents late dependency discovery from mixing React instances while preserving Start's server-to-browser import transforms.
