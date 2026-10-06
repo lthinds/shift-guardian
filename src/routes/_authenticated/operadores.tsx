@@ -63,7 +63,7 @@ function Operadores() {
             <div key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
               <div><span className="font-medium">{o.name}</span> <span className="text-muted-foreground">{o.email}</span></div>
               <div className="flex items-center gap-2">
-                <span className="rounded bg-accent px1.5 px-1.5 py-0.5 text-xs">{o.isAdmin ? "admin" : o.isManager ? "cadastros" : "operador"}</span>
+                <span className="rounded bg-accent px-1.5 py-0.5 text-xs">{o.isAdmin ? "admin" : o.isManager ? "cadastros" : "operador"}</span>
                 {me?.isAdmin && o.id !== me.id && (
                   <>
                     {!o.isAdmin && <Button size="sm" variant="outline" onClick={() => toggleRole(o.id, "manager", o.isManager)}>{o.isManager ? "Revogar cadastros" : "Conceder cadastros"}</Button>}
