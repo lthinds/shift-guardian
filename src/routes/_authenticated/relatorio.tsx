@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  addDays, downloadText, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, WEEKDAY_LABELS, type EventRow,
+  addDays, downloadText, eventSensors, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, WEEKDAY_LABELS, type EventRow,
 } from "@/lib/safenet";
 
 export const Route = createFileRoute("/_authenticated/relatorio")({
@@ -53,17 +53,17 @@ function Relatorio() {
     const rows = [
       ...ev.map((e) => ({
         record_id: e.id, client_id: e.client_id, client_name: client.name, record_type: e.kind, event_date: e.event_date,
-        event_time: hhmm(e.event_time), user_name: e.user_name, device_name: e.device_name, by_operator: e.by_operator,
-        sensor: e.sensor_id ? sensorLabel(data?.sensors, e.sensor_id) : "", description: e.description, status: e.status,
-        end_date: "", archived: e.archived, created_at: e.created_at,
+        event_time: hhmm(e.event_time), event_end_time: hhmm(e.end_time), user_name: e.user_name, device_name: e.device_name, by_operator: e.by_operator,
+        sensor: eventSensors(e, (id) => sensorLabel(data?.sensors, id)), description: e.description, status: e.status,
+        end_date: "", custom: Object.keys(e.custom ?? {}).length ? JSON.stringify(e.custom) : "", archived: e.archived, created_at: e.created_at,
       })),
       ...bp.map((b) => ({
         record_id: b.id, client_id: b.client_id, client_name: client.name, record_type: "bypass", event_date: b.start_date,
-        event_time: "", user_name: "", device_name: "", by_operator: false, sensor: sensorLabel(data?.sensors, b.sensor_id),
-        description: b.reason, status: b.end_date ? "liberada" : "ativa", end_date: b.end_date ?? "", archived: b.archived, created_at: b.created_at,
+        event_time: "", event_end_time: "", user_name: "", device_name: "", by_operator: false, sensor: b.sensor_label ?? sensorLabel(data?.sensors, b.sensor_id),
+        description: b.reason, status: b.end_date ? "liberada" : "ativa", end_date: b.end_date ?? "", custom: "", archived: b.archived, created_at: b.created_at,
       })),
     ];
-    const cols = ["record_id", "client_id", "client_name", "record_type", "event_date", "event_time", "user_name", "device_name", "by_operator", "sensor", "description", "status", "end_date", "archived", "created_at"];
+    const cols = ["record_id", "client_id", "client_name", "record_type", "event_date", "event_time", "event_end_time", "user_name", "device_name", "by_operator", "sensor", "description", "status", "end_date", "custom", "archived", "created_at"];
     downloadText(`safenet_${client.name.replace(/\W+/g, "_")}_${r.from}_${r.to}.csv`, toCSV(rows, cols));
   };
 

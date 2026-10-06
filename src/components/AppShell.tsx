@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import { ShieldCheck, Radio, CalendarRange, Building2, Users, Moon, Sun, LogOut } from "lucide-react";
+import { ShieldCheck, Radio, CalendarRange, Building2, Users, Moon, Sun, LogOut, SlidersHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveShift, useMe, useOperators } from "@/hooks/use-safenet";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ const NAV = [
   { to: "/relatorio", label: "Relatório semanal", icon: CalendarRange },
   { to: "/clientes", label: "Clientes", icon: Building2 },
   { to: "/operadores", label: "Operadores", icon: Users },
+  { to: "/campos", label: "Campos", icon: SlidersHorizontal },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
