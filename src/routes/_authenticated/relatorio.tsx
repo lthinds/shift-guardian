@@ -36,7 +36,7 @@ function Relatorio() {
   useEffect(() => { if (!clientId && clients[0]) setClientId(clients[0].id); }, [clients, clientId]);
 
   const days = weekDays(ref);
-  const from = days[0], to = days[6];
+  const from = days[0]!, to = days[6]!;
   const { data } = useClientData(clientId);
   const { data: events = [] } = useEvents(clientId, from, to, showArchived);
   const { data: bypasses = [] } = useBypasses(clientId, from, to, showArchived);
@@ -78,7 +78,7 @@ function Relatorio() {
     <div className="space-y-4">
       <div className="no-print flex flex-wrap items-center gap-2">
         <h1 className="mr-auto text-2xl font-bold">Relatório Semanal</h1>
-        <Select value={clientId} onValueChange={setClientId}>
+        <Select value={clientId ?? ""} onValueChange={setClientId}>
           <SelectTrigger className="w-56"><SelectValue placeholder="Cliente" /></SelectTrigger>
           <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
         </Select>
