@@ -1,24 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "Monitoramento Safenet — Plantão e relatórios" },
+      { name: "description", content: "Registro de plantão, armes, desarmes, disparos e relatórios semanais da Safenet." },
+      { property: "og:title", content: "Monitoramento Safenet" },
+      { property: "og:description", content: "Registro de plantão e relatórios semanais da equipe de monitoramento." },
+    ],
+  }),
+  component: Home,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Home() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="flex min-h-screen flex-col items-center justify-center gap-6 bg-sidebar p-6 text-center text-sidebar-foreground">
+      <ShieldCheck className="h-16 w-16" />
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Monitoramento Safenet</h1>
+        <p className="mt-2 max-w-md opacity-80">Acompanhamento de plantão, passagem de turno e relatórios semanais por cliente.</p>
+      </div>
+      <Button asChild size="lg" variant="secondary"><Link to="/plantao">Acessar painel</Link></Button>
     </div>
   );
 }
