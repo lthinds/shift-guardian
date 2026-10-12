@@ -65,7 +65,19 @@ export function addDays(d: Date, n: number): Date {
 /** Monday..Sunday ISO dates for the week containing `d`. */
 export function weekDays(d: Date): string[] {
   const s = weekStart(d);
-  return Array.from({ length: 7 }, (_, i) => toISODate(addDays(s, i)));
+  return Array.from({ length: 7 }, (_, i) => addDays(s, i))
+    .filter(day => day.getMonth() === d.getMonth() && day.getFullYear() === d.getFullYear())
+    .map(toISODate);
+}
+
+export function adjacentReportWeek(d: Date, direction: -1 | 1): Date {
+  const days = weekDays(d);
+  const edge = direction === -1 ? days[0] : days.at(-1);
+  return edge ? addDays(fromISODate(edge), direction) : d;
+}
+
+export function weekdayLabel(iso: string): string {
+  return WEEKDAY_LABELS[(fromISODate(iso).getDay() + 6) % 7] ?? "";
 }
 
 export const WEEKDAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
@@ -84,10 +96,42 @@ export const KIND_LABEL: Record<EventKind, string> = {
   observation: "Observação",
 };
 
-function latest(events: EventRow[], kind: EventKind): EventRow | undefined {
+export function latest(events: EventRow[], kind: EventKind): EventRow | undefined {
   return events
     .filter((e) => e.kind === kind)
-    .sort((a, b) => (hhmm(a.event_time) < hhmm(b.event_time) ? 1 : -1))[0];
+    .sort((a, b) => (b.event_date + (b.event_time ?? "")).localeCompare(a.event_date + (a.event_time ?? "")) || b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id))[0];
+}
+
+export function isDisarmed(events: EventRow[]): boolean {
+  return latestArmState(events)?.kind === "disarm";
+}
+
+function latestArmState(events: EventRow[]): EventRow | undefined {
+  return [...events].filter(e => e.kind === "arm" || e.kind === "disarm")
+    .sort((a, b) => (b.event_date + (b.event_time ?? "")).localeCompare(a.event_date + (a.event_time ?? "")) || b.created_at.localeCompare(a.created_at) || b.id.localeCompare(a.id))[0];
+}
+
+export function shiftContainsEvent(e: EventRow, startedAt: string, endedAt: Date): boolean {
+  const occurredAt = e.kind === 'arm' || e.kind === 'disarm'
+    ? new Date(`${e.event_date}T${e.event_time || "00:00:00"}`).getTime()
+    : new Date(e.created_at).getTime();
+  return occurredAt >= new Date(startedAt).getTime() && occurredAt <= endedAt.getTime();
+}
+
+export function handoverRecords(events: EventRow[], previous: EventRow[] = []) {
+  const disarm = latest(events, "disarm");
+  const arm = latest(events, "arm");
+  return {
+    disarm: disarm ?? latest(previous, "disarm"),
+    arm: arm ?? (disarm ? undefined : latest(previous, "arm")),
+    previousDisarm: !disarm,
+    previousArm: !arm,
+  };
+}
+
+function previousArmText(e: EventRow | undefined): string {
+  if (!e) return "";
+  return `${formatBR(e.event_date)} ${armText(e)} — dispositivo: ${e.device_name || "não informado"} (registro anterior)`;
 }
 
 function armText(e: EventRow | undefined): string {
@@ -100,6 +144,7 @@ export interface ShiftClientInput {
   clientName: string;
   date: string; // ISO
   events: EventRow[]; // events of the shift for this client
+  previousEvents?: EventRow[]; // read-only context before this shift; never copied into events
   newBypasses: { sensorLabel: string; reason: string | null }[];
   sensorLabel: (id: string | null) => string;
 }
@@ -127,6 +172,7 @@ export function eventSensors(e: EventRow, sensorLabel: (id: string | null) => st
 
 /** Builds the WhatsApp block for one client. */
 export function buildClientBlock(c: ShiftClientInput, s: ShiftInfo): string {
+  const records = handoverRecords(c.events, c.previousEvents);
   const alterations: string[] = [];
   for (const e of c.events.filter((x) => x.kind === "trigger")) {
     alterations.push(
@@ -154,7 +200,7 @@ export function buildClientBlock(c: ShiftClientInput, s: ShiftInfo): string {
     `Plantão Finalizado: ${altText}`,
     `Turno: ${s.shiftType}`,
     `Nome: ${s.operatorName}`,
-    `Desarme: ${armText(latest(c.events, "disarm"))} - Arme: ${armText(latest(c.events, "arm"))}`.trimEnd(),
+    `Desarme: ${records.previousDisarm ? previousArmText(records.disarm) : armText(records.disarm)} - Arme: ${records.previousArm ? previousArmText(records.arm) : armText(records.arm)}`.trimEnd(),
     `Observações: ${obs || "S/A"}`,
     "",
     `Plantão Iniciado: sem alterações`,

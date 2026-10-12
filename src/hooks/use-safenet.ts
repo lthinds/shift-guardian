@@ -2,6 +2,29 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { EventRow } from "@/lib/safenet";
 import { canOperate, type AccessStatus } from '@/lib/access';
+import { nowTime, toISODate } from '@/lib/safenet';
+
+/** Two bounded reads per client; includes retained archives, never future entries. */
+export async function readLastArmDisarm(clientIds: string[], before: Date): Promise<EventRow[]> {
+  const date = toISODate(before);
+  const time = `${nowTime(before)}:${String(before.getSeconds()).padStart(2, '0')}`;
+  const rows = await Promise.all(clientIds.flatMap(clientId => (['arm', 'disarm'] as const).map(kind =>
+    must<EventRow[]>(supabase.from('client_events').select('*').eq('client_id', clientId).eq('kind', kind)
+      .or(`event_date.lt.${date},and(event_date.eq.${date},event_time.lt.${time})`)
+      .order('event_date', { ascending: false }).order('event_time', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(1)),
+  )));
+  return rows.flat();
+}
+
+export function useClientArmStates(clientIds: string[]) {
+  return useQuery({
+    queryKey: ['events', 'arm-states', [...clientIds].sort()],
+    enabled: clientIds.length > 0,
+    refetchInterval: 15000,
+    queryFn: () => readLastArmDisarm(clientIds, new Date(Date.now() + 1000)),
+  });
+}
 
 export interface Profile { id: string; name: string; email: string | null }
 export function useOperatorAccess() {

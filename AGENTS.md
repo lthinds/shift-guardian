@@ -10,3 +10,5 @@
 - Administrator account removal uses an authenticated server function to block RLS first and then soft-delete Auth through its admin API; profiles remain for history. Why: former staff lose access without erasing shift attribution.
 - Archives are full JSON snapshots saved before a compare-and-match confirmation marks rows with `archived_at`; edits reset retention and daily SQL cleanup deletes only expired archived rows. Why: unsaved, changed and unarchived records must never be purged.
 - File exports use browser folder/file APIs with download fallback, and PDF is generated client-side. Why: files stay on the operator's computer or accessible company network drive.
+- Brand image URLs are centralized in a browser-safe configuration module. Why: intranet staff can replace served image URLs without changing layout or deployment settings.
+- Client arm state and previous handover context use bounded latest-per-kind reads through the existing browser client; previous records stay separate from shift events. Why: retained history supplies context without duplicate writes or new schema requirements.
