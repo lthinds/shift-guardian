@@ -6,8 +6,8 @@
 - [x] Export project to GitHub — user confirmed the repository is private and the app is deployed on the intranet.
 
 # Targeted intranet updates
-- [ ] Show disarmed indicator based on latest recorded arm/disarm.
-- [ ] Carry previous arm/disarm details into shift handover only, according to missing-record rules.
-- [ ] Split weekly report at month boundaries, including navigation and exports.
-- [ ] Configure company logo and favicon with replaceable image paths.
-- [ ] Test changes and deliver a targeted patch and copy/paste guide without deployment configuration.
+- [x] Show disarmed indicator based on latest recorded arm/disarm.
+- [x] Carry previous arm/disarm details into shift handover only, according to missing-record rules.
+- [x] Split weekly report at month boundaries, including navigation and exports.
+- [x] Configure company logo and favicon with replaceable image paths (real company image awaits TI substitution).
+- [x] Test changes and deliver a targeted patch and copy/paste guide without deployment configuration — 25 tests passed, authenticated handover and month navigation checked.
