@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { ShieldCheck } from "lucide-react";
+import { COMPANY_LOGO_URL } from '@/lib/branding';
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
@@ -70,7 +70,7 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-sidebar p-4">
       <div className="w-full max-w-sm rounded-xl bg-card p-8 shadow-2xl">
         <div className="mb-6 flex items-center gap-3">
-          <ShieldCheck className="h-9 w-9 text-primary" />
+          <img src={COMPANY_LOGO_URL} alt="Logo Safenet" className="h-9 w-9 shrink-0 object-contain" />
           <div>
             <h1 className="text-lg font-bold">Monitoramento Safenet</h1>
             <p className="text-sm text-muted-foreground">{mode === "in" ? "Entrar como operador" : "Cadastrar operador"}</p>

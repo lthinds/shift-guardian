@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Flag, Play, Send, ShieldAlert } from "lucide-react";
+import { Copy, Flag, Play, Send, ShieldAlert, ShieldOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useActiveShift, useAllSensors, useBypasses, useClientData, useClients, useEvents, useInvalidate, useMe, useOperators,
-  must, sensorLabel, type Bypass,
+  must, sensorLabel, type Bypass, useClientArmStates, readLastArmDisarm,
 } from "@/hooks/use-safenet";
 import { ArmForm, BypassPanel, EventList, QuickEventForm } from "@/components/events";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { buildShiftMessage, nextShiftType, toISODate, type EventRow } from "@/lib/safenet";
+import { buildShiftMessage, nextShiftType, toISODate, isDisarmed, shiftContainsEvent, type EventRow } from "@/lib/safenet";
 
 export const Route = createFileRoute("/_authenticated/plantao")({
   head: () => ({
@@ -32,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/plantao")({
 
 function Plantao() {
   const { data: clients = [] } = useClients();
+  const { data: armStates = [], isError: stateError } = useClientArmStates(clients.map(c => c.id));
   const { data: shift } = useActiveShift();
   const [clientId, setClientId] = useState<string>();
   const [endOpen, setEndOpen] = useState(false);
@@ -51,10 +52,12 @@ function Plantao() {
         <div className="grid gap-4 lg:grid-cols-[220px_1fr]">
           <div className="flex gap-2 overflow-x-auto lg:flex-col">
             {clients.map((c) => (
-              <button key={c.id} onClick={() => setClientId(c.id)}
-                className={`shrink-0 rounded-md border px-3 py-2.5 text-left text-sm font-medium ${c.id === clientId ? "border-primary bg-primary text-primary-foreground" : "bg-card hover:bg-accent"}`}>
-                {c.name}
-              </button>
+              <Button key={c.id} onClick={() => setClientId(c.id)} variant={c.id === clientId ? "default" : "outline"}
+                className="h-auto shrink-0 justify-start gap-2 whitespace-normal px-3 py-2.5 text-left text-sm"
+                title={stateError ? 'Não foi possível consultar o estado registrado' : undefined}>
+                {isDisarmed(armStates.filter(e => e.client_id === c.id)) && <ShieldOff className="h-4 w-4 shrink-0" aria-label="Desarmado conforme último registro" role="img"><title>Desarmado conforme último registro</title></ShieldOff>}
+                <span className="min-w-0 break-words">{c.name}</span>
+              </Button>
             ))}
           </div>
           {clientId && <ClientPanel clientId={clientId} />}
@@ -133,16 +136,19 @@ function EndShiftDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
     if (!shift || !next) { toast.error("Selecione o próximo operador"); return; }
     const startDate = toISODate(new Date(shift.started_at));
     const today = toISODate(new Date());
-    const [events, bps] = await Promise.all([
+    const generatedAt = new Date();
+    const [events, bps, previousEvents] = await Promise.all([
       must<EventRow[]>(supabase.from("client_events").select("*").gte("event_date", startDate).lte("event_date", today).eq("archived", false)),
       must<Bypass[]>(supabase.from("bypasses").select("*").gte("created_at", shift.started_at)),
+      readLastArmDisarm(clients.map(c => c.id), new Date(shift.started_at)),
     ]);
-    const inShift = (e: EventRow) => e.created_at >= shift.started_at || e.event_date === today;
+    const inShift = (e: EventRow) => shiftContainsEvent(e, shift.started_at, generatedAt);
     const text = buildShiftMessage(
       clients.map((c) => ({
         clientName: c.name,
         date: today,
         events: events.filter((e) => e.client_id === c.id && inShift(e)),
+        previousEvents: previousEvents.filter(e => e.client_id === c.id),
         newBypasses: bps.filter((b) => b.client_id === c.id).map((b) => ({ sensorLabel: b.sensor_label ?? sensorLabel(sensors, b.sensor_id), reason: b.reason })),
         sensorLabel: (id) => sensorLabel(sensors, id),
       })),

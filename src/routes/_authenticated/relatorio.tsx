@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  addDays, eventSensors, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, WEEKDAY_LABELS, type EventRow,
+  adjacentReportWeek, eventSensors, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, weekdayLabel, type EventRow,
 } from "@/lib/safenet";
 
 export const Route = createFileRoute("/_authenticated/relatorio")({
@@ -76,7 +76,7 @@ function Relatorio() {
   useEffect(() => { if (!clientId && clients[0]) setClientId(clients[0].id); }, [clients, clientId]);
 
   const days = weekDays(ref);
-  const from = days[0] ?? '', to = days[6] ?? '';
+  const from = days[0] ?? '', to = days.at(-1) ?? '';
   const { data } = useClientData(clientId);
   const { data: events = [] } = useEvents(clientId, from, to, showArchived);
   const { data: bypasses = [] } = useBypasses(clientId, from, to, showArchived);
@@ -142,9 +142,9 @@ function Relatorio() {
           <SelectContent>{clients.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
         </Select>
         <div className="flex items-center rounded-md border bg-card">
-          <Button variant="ghost" size="icon" onClick={() => setRef(addDays(ref, -7))} aria-label="Semana anterior"><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setRef(adjacentReportWeek(ref, -1))} aria-label="Semana anterior"><ChevronLeft className="h-4 w-4" /></Button>
           <span className="px-2 font-mono text-sm">{formatBR(from)} – {formatBR(to)}</span>
-          <Button variant="ghost" size="icon" onClick={() => setRef(addDays(ref, 7))} aria-label="Próxima semana"><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon" onClick={() => setRef(adjacentReportWeek(ref, 1))} aria-label="Próxima semana"><ChevronRight className="h-4 w-4" /></Button>
         </div>
         <Button variant="outline" size="sm" onClick={() => setRef(new Date())}>Semana atual</Button>
       </div>
@@ -180,12 +180,12 @@ function Relatorio() {
             <CardHeader className="pb-2"><CardTitle className="text-base">Armes e desarmes · {client.name}</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
               <div className="grid min-w-[840px] grid-cols-7 gap-2">
-                {days.map((d, i) => {
+                {days.map((d) => {
                   const dayEv = events.filter((e) => e.event_date === d && (e.kind === "arm" || e.kind === "disarm"));
                   return (
                     <div key={d} className="rounded-md border bg-muted/40 p-2">
                       <div className="mb-2 flex items-baseline justify-between">
-                        <span className="text-xs font-bold uppercase">{WEEKDAY_LABELS[i]}</span>
+                        <span className="text-xs font-bold uppercase">{weekdayLabel(d)}</span>
                         <span className="font-mono text-xs text-muted-foreground">{formatBR(d).slice(0, 5)}</span>
                       </div>
                       {(["disarm", "arm"] as const).map((k) => (

@@ -1,7 +1,8 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState, type ReactNode } from "react";
-import { ShieldCheck, Radio, CalendarRange, Building2, Users, Moon, Sun, LogOut, SlidersHorizontal } from "lucide-react";
+import { Radio, CalendarRange, Building2, Users, Moon, Sun, LogOut, SlidersHorizontal } from "lucide-react";
+import { COMPANY_LOGO_URL } from '@/lib/branding';
 import { supabase } from "@/integrations/supabase/client";
 import { useActiveShift, useMe, useOperators, useOperatorAccess } from "@/hooks/use-safenet";
 import { canOperate } from '@/lib/access';
@@ -53,7 +54,7 @@ function ApprovedShell({ children }: { children: ReactNode }) {
     <div className="flex min-h-screen bg-background">
       <aside className="no-print hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-5">
-          <ShieldCheck className="h-7 w-7" />
+          <img src={COMPANY_LOGO_URL} alt="Logo Safenet" className="h-7 w-7 shrink-0 object-contain" />
           <div className="leading-tight">
             <div className="text-sm font-bold tracking-wide">SAFENET</div>
             <div className="text-xs opacity-70">Monitoramento</div>
