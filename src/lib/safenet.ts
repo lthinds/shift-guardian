@@ -103,9 +103,7 @@ export function latest(events: EventRow[], kind: EventKind): EventRow | undefine
 }
 
 export function isDisarmed(events: EventRow[]): boolean {
-  const disarm = latest(events, "disarm");
-  const arm = latest(events, "arm");
-  return !!disarm && latest([disarm, ...(arm ? [arm] : [])], "disarm") === latestArmState(events);
+  return latestArmState(events)?.kind === "disarm";
 }
 
 function latestArmState(events: EventRow[]): EventRow | undefined {
@@ -114,7 +112,9 @@ function latestArmState(events: EventRow[]): EventRow | undefined {
 }
 
 export function shiftContainsEvent(e: EventRow, startedAt: string, endedAt: Date): boolean {
-  const occurredAt = new Date(`${e.event_date}T${e.event_time || "00:00:00"}`).getTime();
+  const occurredAt = e.kind === 'arm' || e.kind === 'disarm'
+    ? new Date(`${e.event_date}T${e.event_time || "00:00:00"}`).getTime()
+    : new Date(e.created_at).getTime();
   return occurredAt >= new Date(startedAt).getTime() && occurredAt <= endedAt.getTime();
 }
 
