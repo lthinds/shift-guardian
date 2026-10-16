@@ -52,7 +52,7 @@ function ApprovedShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen bg-background">
-      <aside className="no-print hidden w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
+      <aside className="no-print sticky top-0 hidden h-screen w-60 shrink-0 flex-col bg-sidebar text-sidebar-foreground md:flex">
         <div className="flex items-center gap-2 border-b border-sidebar-border px-5 py-5">
           <img src={COMPANY_LOGO_URL} alt="Logo Safenet" className="h-7 w-7 shrink-0 object-contain" />
           <div className="leading-tight">
@@ -60,7 +60,7 @@ function ApprovedShell({ children }: { children: ReactNode }) {
             <div className="text-xs opacity-70">Monitoramento</div>
           </div>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-1 overflow-y-auto p-3">
           {NAV.map((n) => (
             <Link
               key={n.to}

@@ -129,15 +129,22 @@ export function handoverRecords(events: EventRow[], previous: EventRow[] = []) {
   };
 }
 
-function previousArmText(e: EventRow | undefined): string {
-  if (!e) return "";
-  return `${formatBR(e.event_date)} ${armText(e)} — dispositivo: ${e.device_name || "não informado"} (registro anterior)`;
+/** Removes the leading 4-digit client code ("1234 - Cliente" -> "Cliente"). */
+export function clientDisplayName(name: string): string {
+  return name.replace(/^\s*\d+\s*-\s*/, "").trim() || name;
 }
 
-function armText(e: EventRow | undefined): string {
+/** Keeps only the operator's first name (an "Operador" prefix is preserved). */
+export function firstName(name: string): string {
+  const m = name.trim().match(/^(operador(?:a)?\s+)?(\S+)/i);
+  return m ? `${m[1] ?? ""}${m[2]}` : name.trim();
+}
+
+function armText(e: EventRow | undefined, shiftDate?: string): string {
   if (!e) return "";
-  const who = e.by_operator ? `${e.user_name ?? "operador"} (operador)` : e.user_name ?? "—";
-  return `${hhmm(e.event_time)} por ${who}`;
+  const who = e.by_operator ? `${firstName(e.user_name ?? "operador")} (operador)` : e.user_name ?? "—";
+  const date = shiftDate && e.event_date !== shiftDate ? `${formatBR(e.event_date)} às ` : "";
+  return `${date}${hhmm(e.event_time)} por ${who}`;
 }
 
 export interface ShiftClientInput {
@@ -192,20 +199,20 @@ export function buildClientBlock(c: ShiftClientInput, s: ShiftInfo): string {
     .join("; ");
 
   return [
-    `(${c.clientName})`,
+    `(${clientDisplayName(c.clientName)})`,
     "",
     "Relatório de Plantão:",
     "",
     `Data: ${formatBR(c.date)}`,
     `Plantão Finalizado: ${altText}`,
     `Turno: ${s.shiftType}`,
-    `Nome: ${s.operatorName}`,
-    `Desarme: ${records.previousDisarm ? previousArmText(records.disarm) : armText(records.disarm)} - Arme: ${records.previousArm ? previousArmText(records.arm) : armText(records.arm)}`.trimEnd(),
+    `Nome: ${firstName(s.operatorName)}`,
+    `Desarme: ${armText(records.disarm, c.date)} - Arme: ${armText(records.arm, c.date)}`.trimEnd(),
     `Observações: ${obs || "S/A"}`,
     "",
     `Plantão Iniciado: sem alterações`,
     `Turno: ${s.nextShiftType}`,
-    `Nome: ${s.nextOperatorName}`,
+    `Nome: ${firstName(s.nextOperatorName)}`,
   ].join("\n");
 }
 
