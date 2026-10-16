@@ -24,8 +24,8 @@ describe('estado registrado', () => {
 describe('contexto de passagem', () => {
   it('sem arme/desarme usa ambos os anteriores com data, responsável e dispositivo', () => {
     const msg = buildClientBlock({ clientName: 'X', date: '2026-10-06', events: [], previousEvents: [oldDisarm, oldArm], newBypasses: [], sensorLabel: () => '' }, shift);
-    expect(msg).toContain('Desarme: 05/10/2026 06:49 por Fulano — dispositivo: Controle (registro anterior)');
-    expect(msg).toContain('Arme: 05/10/2026 18:00 por Fulano — dispositivo: Controle (registro anterior)');
+    expect(msg).toContain('Desarme: 05/10/2026 às 06:49 por Fulano - Arme: 05/10/2026 às 18:00 por Fulano');
+    expect(msg).not.toContain('registro anterior');
   });
   it('apenas arme complementa com último desarme', () => {
     const arm = event({});
@@ -66,5 +66,24 @@ describe('semana cortada no mês', () => {
   it('considera fevereiro bissexto e a virada do ano', () => {
     expect(weekDays(new Date(2028, 1, 29)).at(-1)).toBe('2028-02-29');
     expect(toISODate(adjacentReportWeek(new Date(2026, 11, 31), 1))).toBe('2027-01-01');
+  });
+});
+
+import { clientDisplayName, firstName } from './safenet';
+describe('ajustes de relatório', () => {
+  it('remove só o código inicial do cliente', () => {
+    expect(clientDisplayName('1234 - Cliente')).toBe('Cliente');
+    expect(clientDisplayName('0042 - Condomínio 2 Irmãos - Bloco 3')).toBe('Condomínio 2 Irmãos - Bloco 3');
+    expect(clientDisplayName('Loja 24 Horas')).toBe('Loja 24 Horas');
+  });
+  it('usa apenas o primeiro nome do operador', () => {
+    expect(firstName('Lucas Hinds')).toBe('Lucas');
+    expect(firstName('Operador Lucas Hinds')).toBe('Operador Lucas');
+  });
+  it('mesmo dia mostra só horário', () => {
+    const d = { ...oldDisarm, event_date: '2026-10-06', event_time: '06:00' };
+    const msg = buildClientBlock({ clientName: '1234 - X', date: '2026-10-06', events: [], previousEvents: [d], newBypasses: [], sensorLabel: () => '' }, shift);
+    expect(msg).toContain('Desarme: 06:00 por Fulano');
+    expect(msg.startsWith('(X)')).toBe(true);
   });
 });
