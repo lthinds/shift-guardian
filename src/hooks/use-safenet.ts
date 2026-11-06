@@ -35,7 +35,7 @@ export function useOperatorAccess() {
     return row.status;
   } });
 }
-export interface Client { id: string; name: string; address: string | null; notes: string | null }
+export interface Client { id: string; name: string; address: string | null; notes: string | null; brand?: string | null }
 export interface Sensor { id: string; client_id: string; zone: string; name: string; type: string }
 export interface Device { id: string; client_id: string; name: string; type: string }
 export interface ClientUser { id: string; client_id: string; name: string; role: string | null }
