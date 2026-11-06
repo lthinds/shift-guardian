@@ -55,7 +55,7 @@ function Plantao() {
               <Button key={c.id} onClick={() => setClientId(c.id)} variant={c.id === clientId ? "default" : "outline"}
                 className="h-auto shrink-0 justify-start gap-2 whitespace-normal px-3 py-2.5 text-left text-sm"
                 title={stateError ? 'Não foi possível consultar o estado registrado' : undefined}>
-                {isDisarmed(armStates.filter(e => e.client_id === c.id)) && <ShieldOff className="h-4 w-4 shrink-0" aria-label="Desarmado conforme último registro" role="img"><title>Desarmado conforme último registro</title></ShieldOff>}
+                {isDisarmed(armStates.filter(e => e.client_id === c.id)) && <ShieldOff className="h-4 w-4 shrink-0 text-destructive" aria-label="Desarmado conforme último registro" role="img"><title>Desarmado conforme último registro</title></ShieldOff>}
                 <span className="min-w-0 break-words">{c.name}</span>
               </Button>
             ))}

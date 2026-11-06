@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientData, useClients, useInvalidate, useMe } from "@/hooks/use-safenet";
+import { normalizeBrand, type Brand } from "@/lib/report-pdf";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,16 +56,16 @@ function Clientes() {
             ))}
           </CardContent>
         </Card>
-        {client && <ClientDetail key={client.id} id={client.id} name={client.name} address={client.address ?? ""} canManage={canManage} isAdmin={!!me?.isAdmin} />}
+        {client && <ClientDetail key={client.id} id={client.id} name={client.name} address={client.address ?? ""} brand={normalizeBrand(client.brand)} canManage={canManage} isAdmin={!!me?.isAdmin} />}
       </div>
     </div>
   );
 }
 
-function ClientDetail({ id, name, address, canManage, isAdmin }: { id: string; name: string; address: string; canManage: boolean; isAdmin: boolean }) {
+function ClientDetail({ id, name, address, brand, canManage, isAdmin }: { id: string; name: string; address: string; brand: Brand; canManage: boolean; isAdmin: boolean }) {
   const { data } = useClientData(id);
   const inv = useInvalidate();
-  const save = async (patch: { name?: string; address?: string }) => {
+  const save = async (patch: { name?: string; address?: string; brand?: Brand }) => {
     const { error } = await supabase.from("clients").update(patch).eq("id", id);
     if (error) toast.error(error.message); else inv("clients");
   };
@@ -80,6 +81,11 @@ function ClientDetail({ id, name, address, canManage, isAdmin }: { id: string; n
         <CardContent className="flex flex-wrap gap-2 p-4">
           <Input disabled={!canManage} className="flex-1 text-lg font-semibold" defaultValue={name} onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== name && save({ name: e.target.value.trim() })} />
           <Input disabled={!canManage} className="flex-1" placeholder="Endereço" defaultValue={address} onBlur={(e) => e.target.value !== address && save({ address: e.target.value })} />
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">Empresa responsável
+            <select disabled={!isAdmin} title={isAdmin ? undefined : "Somente administradores alteram a empresa"} className="h-9 rounded-md border bg-background px-2 text-foreground disabled:opacity-70" value={brand} onChange={(e) => save({ brand: e.target.value as Brand })}>
+              <option value="reggra">Reggra</option><option value="safenet">Safenet</option>
+            </select>
+          </label>
           {isAdmin && <Button variant="ghost" onClick={delClient}><Trash2 className="mr-1 h-4 w-4" />Excluir</Button>}
         </CardContent>
       </Card>
