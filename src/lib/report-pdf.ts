@@ -210,7 +210,7 @@ export async function generateReportPDF(input: ReportInput): Promise<Blob> {
       for (const it of items.slice(0, 8)) { font(12, true); color(b.text); pdf.text(it.time, x + 10, yy); font(9); color("#475569"); pdf.text(it.who, x + 60, yy); yy += 20; }
     });
     table("Disparos do dia", d.period, trigCols, trigRows, "Nenhum disparo registrado no dia.");
-    table("Zonas inibidas e visitas técnicas", d.period, bypassCols, bypassRows, "Nenhuma zona inibida.");
+    table("Zonas inibidas", d.period, bypassCols, bypassRows, "Nenhuma zona inibida.");
     if (mainRows.length) table("Visitas técnicas", d.period, mainCols, mainRows, "");
     table("Pontos de atenção", d.period, obsCols, obsRows, "Nenhum ponto de atenção registrado.");
   } else if (input.kind === "weekly") {
