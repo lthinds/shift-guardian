@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, FileDown, Printer, FolderOpen } from "lucide
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useBypasses, useClientData, useClients, useEvents, useMe, useInvalidate, useCustomFields, must, sensorLabel, type Bypass } from "@/hooks/use-safenet";
+import { generateReportPDF, normalizeBrand, type ReportKind } from '@/lib/report-pdf';
 import { chooseExportFolder, saveExport } from '@/lib/export-files';
 import { archiveDeadline } from '@/lib/archive-retention';
 import type { Json } from '@/integrations/supabase/types';
@@ -14,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  adjacentReportWeek, eventSensors, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, weekdayLabel, type EventRow,
+  adjacentReportWeek, clientDisplayName, eventSensors, formatBR, hhmm, KIND_LABEL, monthRange, toCSV, weekDays, weekdayLabel, type EventRow,
 } from "@/lib/safenet";
 
 export const Route = createFileRoute("/_authenticated/relatorio")({
@@ -47,30 +48,25 @@ function Relatorio() {
     try { setFolderName(await chooseExportFolder()); }
     catch (e) { if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message); }
   };
-  const exportPDF = async () => {
-    if (!client) return;
+  const [pdfDay, setPdfDay] = useState(() => new Date().toISOString().slice(0, 10));
+  const exportPDF = async (kind: ReportKind) => {
+    if (!client || !clientId) return;
     try {
-      const { jsPDF } = await import('jspdf');
-      const pdf = new jsPDF(); let y = 20;
-      const line = (text: string, size = 10) => {
-        pdf.setFontSize(size);
-        for (const s of pdf.splitTextToSize(text, 174) as string[]) {
-          if (y > 277) { pdf.addPage(); y = 20; }
-          pdf.text(s, 18, y); y += size === 16 ? 9 : 6;
-        }
-      };
-      line('Monitoramento Safenet', 16); line(client.name, 14); line(`${formatBR(from)} a ${formatBR(to)}`); y += 6;
-      for (const day of days) {
-        line(formatBR(day), 14);
-        const daily = events.filter(e => e.event_date === day);
-        for (const e of daily) {
-          line(`${KIND_LABEL[e.kind]}: ${hhmm(e.event_time)}${e.end_time ? ` às ${hhmm(e.end_time)}` : ''} ${e.user_name ?? ''} ${e.device_name ?? ''} ${eventSensors(e, id => sensorLabel(data?.sensors, id))} ${e.description ?? ''} ${e.status ?? ''}`);
-          for (const [id, value] of Object.entries(e.custom ?? {})) line(`${fields.find(f => f.id === id)?.label ?? id}: ${value}`);
-        }
-        for (const b of bypasses.filter(b => b.start_date <= day && (!b.end_date || b.end_date >= day))) line(`Zona inibida: ${b.sensor_label ?? sensorLabel(data?.sensors, b.sensor_id)} — ${b.reason ?? ''}`);
-        if (!daily.length) line('Sem registros de eventos'); y += 4;
-      }
-      await saveExport(`safenet_${client.name.replace(/\W+/g, '_')}_${from}.pdf`, pdf.output('blob'));
+      const r = kind === 'weekly' ? { from, to } : kind === 'monthly' ? monthRange(ref) : { from: pdfDay, to: pdfDay };
+      const [ev, bp] = await Promise.all([
+        must<EventRow[]>(supabase.from('client_events').select('*').eq('client_id', clientId).gte('event_date', r.from).lte('event_date', r.to).order('event_date').order('event_time')),
+        must<Bypass[]>(supabase.from('bypasses').select('*').eq('client_id', clientId).lte('start_date', r.to).or(`end_date.is.null,end_date.gte.${r.from}`)),
+      ]);
+      const list: string[] = [];
+      for (let d = new Date(r.from + 'T12:00:00'); d.toISOString().slice(0, 10) <= r.to; d.setDate(d.getDate() + 1)) list.push(d.toISOString().slice(0, 10));
+      const blob = await generateReportPDF({
+        brand: normalizeBrand(client.brand), kind, clientName: client.name, from: r.from, to: r.to, days: list,
+        events: ev.filter(e => showArchived || !e.archived),
+        bypasses: bp.filter(b => showArchived || !b.archived).map(b => ({ sensor: b.sensor_label ?? sensorLabel(data?.sensors, b.sensor_id), reason: b.reason, start_date: b.start_date, end_date: b.end_date })),
+        sensorName: e => eventSensors(e, id => sensorLabel(data?.sensors, id)),
+      });
+      const tag = { daily: 'diario', weekly: 'semanal', monthly: 'mensal' }[kind];
+      await saveExport(`relatorio_${tag}_${clientDisplayName(client.name).replace(/\W+/g, '_')}_${r.from}.pdf`, blob);
     } catch (e) { if (e instanceof Error && e.name !== 'AbortError') toast.error(e.message); }
   };
   useEffect(() => { if (!clientId && clients[0]) setClientId(clients[0].id); }, [clients, clientId]);
@@ -151,7 +147,10 @@ function Relatorio() {
       <div className="no-print flex flex-wrap items-center gap-2">
         <Button size="sm" variant="secondary" onClick={() => exportCSV("week").catch(e => { if (e.name !== 'AbortError') toast.error(e.message); })}><FileDown className="mr-1 h-4 w-4" />CSV semana</Button>
         <Button size="sm" variant="secondary" onClick={() => exportCSV("month").catch(e => { if (e.name !== 'AbortError') toast.error(e.message); })}><FileDown className="mr-1 h-4 w-4" />CSV mês</Button>
-        <Button size="sm" variant="secondary" onClick={exportPDF}><Printer className="mr-1 h-4 w-4" />PDF semana</Button>
+        <Button size="sm" variant="secondary" onClick={() => exportPDF('weekly')}><Printer className="mr-1 h-4 w-4" />PDF semana</Button>
+        <Button size="sm" variant="secondary" onClick={() => exportPDF('monthly')}><Printer className="mr-1 h-4 w-4" />PDF mês</Button>
+        <span className="flex items-center gap-1"><input type="date" aria-label="Dia do relatório diário" className="h-8 rounded-md border bg-background px-2 text-sm" value={pdfDay} onChange={e => e.target.value && setPdfDay(e.target.value)} />
+          <Button size="sm" variant="secondary" onClick={() => exportPDF('daily')}><Printer className="mr-1 h-4 w-4" />PDF dia</Button></span>
         {me?.isAdmin && (
           <>
             <Button size="sm" variant="outline" onClick={chooseFolder}><FolderOpen className="mr-1 h-4 w-4" />{folderName || 'Escolher pasta'}</Button>
