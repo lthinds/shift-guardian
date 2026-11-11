@@ -121,9 +121,14 @@ export function shiftContainsEvent(e: EventRow, startedAt: string, endedAt: Date
 export function handoverRecords(events: EventRow[], previous: EventRow[] = []) {
   const disarm = latest(events, "disarm");
   const arm = latest(events, "arm");
+  const effectiveDisarm = disarm ?? latest(previous, "disarm");
+  const previousArm = latest(previous, "arm");
+  const key = (e: EventRow) => e.event_date + (e.event_time ?? "");
+  // A previous arm is shown only if no disarm happened after it (client is still armed).
+  const showPreviousArm = !disarm && previousArm && (!effectiveDisarm || key(previousArm) > key(effectiveDisarm));
   return {
-    disarm: disarm ?? latest(previous, "disarm"),
-    arm: arm ?? (disarm ? undefined : latest(previous, "arm")),
+    disarm: effectiveDisarm,
+    arm: arm ?? (showPreviousArm ? previousArm : undefined),
     previousDisarm: !disarm,
     previousArm: !arm,
   };

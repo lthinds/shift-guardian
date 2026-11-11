@@ -39,6 +39,10 @@ describe('contexto de passagem', () => {
     const arm = event({});
     expect(handoverRecords([disarm, arm], [oldDisarm, oldArm])).toMatchObject({ disarm, arm, previousDisarm: false, previousArm: false });
   });
+  it('desarme de hoje antes do plantão não traz arme de ontem', () => {
+    const todayDisarm = event({ kind: 'disarm', event_date: '2026-10-06', event_time: '06:40:00' });
+    expect(handoverRecords([], [todayDisarm, oldArm]).arm).toBeUndefined();
+  });
   it('não inventa históricos inexistentes', () => expect(handoverRecords([])).toMatchObject({ arm: undefined, disarm: undefined }));
   it('registro anterior no mesmo dia não é do plantão atual', () => {
     const start = new Date(2026, 9, 6, 7);
